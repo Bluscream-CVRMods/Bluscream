@@ -23,8 +23,9 @@ public static class Patches {
     }
     public static void Patch(HarmonyLib.Harmony harmonyInstance, string methodName, Type[] types = null) {
         MelonLogger.Msg("Patching {0}", methodName);
-        if (types != null) harmonyInstance.Patch(typeof(ABI_RC.Core.UI.CohtmlHud).GetMethod(methodName), prefix: new HarmonyMethod(typeof(Patches).GetMethod(methodName, types)));
-        else harmonyInstance.Patch(typeof(ABI_RC.Core.UI.CohtmlHud).GetMethod(methodName), prefix: new HarmonyMethod(typeof(Patches).GetMethod(methodName)));
+        _ = types != null
+            ? harmonyInstance.Patch(typeof(ABI_RC.Core.UI.CohtmlHud).GetMethod(methodName), prefix: new HarmonyMethod(typeof(Patches).GetMethod(methodName, types)))
+            : harmonyInstance.Patch(typeof(ABI_RC.Core.UI.CohtmlHud).GetMethod(methodName), prefix: new HarmonyMethod(typeof(Patches).GetMethod(methodName)));
     }
 }
 
@@ -55,44 +56,55 @@ public class Main : MelonMod {
 
     private void ButtonAPI_OnInit() {
 
-        var menu = ButtonAPI.MainPage.AddSubMenu("Locomotion", "Movement");
-        menu.AddToggle("Freeze", "Freeze Player", (bool enabled) => {
+        ChilloutButtonAPI.UI.SubMenu menu = ButtonAPI.MainPage.AddSubMenu("Locomotion", "Movement");
+        _ = menu.AddToggle("Freeze", "Freeze Player", (bool enabled) => {
             MovementSystem.Instance.enabled = !enabled;
         }, false);
-        menu.AddToggle("canMove", "canMove", (bool enabled) => {
+        _ = menu.AddToggle("canMove", "canMove", (bool enabled) => {
             MovementSystem.Instance.canMove = !enabled;
         }, false);
-        menu.AddToggle("Immobilize", "Immobilize Player", (bool enabled) => {
+        _ = menu.AddToggle("Immobilize", "Immobilize Player", (bool enabled) => {
             MovementSystem.Instance.SetImmobilized(!enabled);
         }, false);
-        menu.AddToggle("Crouch", "Toggle Crouch", (bool enabled) => {
+        _ = menu.AddToggle("Crouch", "Toggle Crouch", (bool enabled) => {
             MovementSystem.Instance.ChangeCrouch(!enabled);
         }, false);
-        menu.AddToggle("Prone", "Toggle Prone", (bool enabled) => {
+        _ = menu.AddToggle("Prone", "Toggle Prone", (bool enabled) => {
             MovementSystem.Instance.ChangeProne(!enabled);
         }, false);
-        menu.AddToggle("Sitting", "Toggle Sitting", (bool enabled) => {
+        _ = menu.AddToggle("Sitting", "Toggle Sitting", (bool enabled) => {
             MovementSystem.Instance.sitting = !enabled;
         }, false);
-        menu.AddToggle("Rotation Lock", "Lock Rotation", (bool enabled) => {
+        _ = menu.AddToggle("Rotation Lock", "Lock Rotation", (bool enabled) => {
             MovementSystem.Instance.canRot = !enabled;
         }, false);
 
         menu = ButtonAPI.MainPage.AddSubMenu("Debug", "Debug");
-        menu.AddButton("Print Layers", "", () => {
+        _ = menu.AddButton("Print Layers", "", () => {
             for (int i = 0; i < 100; i++) {
-                var name = LayerMask.LayerToName(i);
-                if (!string.IsNullOrWhiteSpace(name)) MelonLogger.Msg($"{name} ({i})");
+                string name = LayerMask.LayerToName(i);
+                if (!string.IsNullOrWhiteSpace(name)) {
+                    MelonLogger.Msg($"{name} ({i})");
+                }
             }
         });
-        menu.AddButton("Dump Players", "", () => {
-            var unixTimestamp = (int)DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
-            var path = $"UserData/Logs/PlayerDump-{unixTimestamp}.json";
-            var json = CVRPlayerManager.Instance.NetworkPlayers.ToJson();
+        _ = menu.AddButton("Print Sort Layers", "", () => {
+            for (int i = 0; i < 50; i++) {
+                // foreach (var layer in SortingLayer.layers) {
+                SortingLayer layer = SortingLayer.layers[i];
+                if (SortingLayer.IsValid(i)) {
+                    MelonLogger.Msg($"{layer.name} ({layer.id}) = {layer.value}");
+                }
+            }
+        });
+        _ = menu.AddButton("Dump Players", "", () => {
+            int unixTimestamp = (int)DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
+            string path = $"UserData/Logs/PlayerDump-{unixTimestamp}.json";
+            object json = CVRPlayerManager.Instance.NetworkPlayers.ToJson();
             File.WriteAllText(path, json.ToString());
             MelonLogger.Msg($"Dumped {CVRPlayerManager.Instance.NetworkPlayers.Count} to {path}");
         });
-        menu.AddButton("Print Players", "", () => {
+        _ = menu.AddButton("Print Players", "", () => {
             MelonLogger.Msg($"=== {CVRPlayerManager.Instance.NetworkPlayers.Count} Players ===");
             int i = 0;
             foreach (CVRPlayerEntity player in CVRPlayerManager.Instance.NetworkPlayers) {
