@@ -1,19 +1,33 @@
 ﻿using ABI_RC.Core.Player;
 using ABI_RC.Systems.MovementSystem;
-using Bluscream;
+using AutoConnect;
+using HarmonyLib;
 using MelonLoader;
+using System;
+using System.IO;
 using UnityEngine;
 using ButtonAPI = ChilloutButtonAPI.ChilloutButtonAPIMain;
 
-[assembly: MelonInfo(typeof(Bluscream.Main), Guh.Name, Guh.Version, Guh.Author, Guh.DownloadLink)]
+[assembly: MelonInfo(typeof(AutoConnect.Main), Guh.Name, Guh.Version, Guh.Author, Guh.DownloadLink)]
 [assembly: MelonGame("Alpha Blend Interactive", "ChilloutVR")]
-namespace Bluscream;
+namespace AutoConnect;
 public static class Guh {
     public const string Name = "Bluscream";
     public const string Author = "Bluscream";
     public const string Version = "1.0.0";
     public const string DownloadLink = "";
 }
+public static class Patches {
+    public static void Init(HarmonyLib.Harmony harmonyInstance) {
+        MelonLogger.Msg("Harmony patches completed!");
+    }
+    public static void Patch(HarmonyLib.Harmony harmonyInstance, string methodName, Type[] types = null) {
+        MelonLogger.Msg("Patching {0}", methodName);
+        if (types != null) harmonyInstance.Patch(typeof(ABI_RC.Core.UI.CohtmlHud).GetMethod(methodName), prefix: new HarmonyMethod(typeof(Patches).GetMethod(methodName, types)));
+        else harmonyInstance.Patch(typeof(ABI_RC.Core.UI.CohtmlHud).GetMethod(methodName), prefix: new HarmonyMethod(typeof(Patches).GetMethod(methodName)));
+    }
+}
+
 public class Main : MelonMod {
     public MelonPreferences_Entry ExampleSetting;
 
@@ -33,19 +47,38 @@ public class Main : MelonMod {
         ButtonAPI.OnPlayerLeave += OnPlayerLeave;
         ButtonAPI.OnAvatarInstantiated_Pre_E += OnAvatarInstantiated_Pre_E;
         ButtonAPI.OnAvatarInstantiated_Post_E += OnAvatarInstantiated_Post_E;
+
+        Patches.Init(HarmonyInstance);
     }
     public override void OnApplicationLateStart() {
     }
 
     private void ButtonAPI_OnInit() {
-        ChilloutButtonAPI.UI.SubMenu menu = ButtonAPI.MainPage;
-        menu.AddToggle("Immobilize", "Immobilize Player", (bool enabled) => {
-            MovementSystem.Instance.canMove = !enabled;
-        }, false);
+
+        var menu = ButtonAPI.MainPage.AddSubMenu("Locomotion", "Movement");
         menu.AddToggle("Freeze", "Freeze Player", (bool enabled) => {
             MovementSystem.Instance.enabled = !enabled;
         }, false);
-#if DEBUG
+        menu.AddToggle("canMove", "canMove", (bool enabled) => {
+            MovementSystem.Instance.canMove = !enabled;
+        }, false);
+        menu.AddToggle("Immobilize", "Immobilize Player", (bool enabled) => {
+            MovementSystem.Instance.SetImmobilized(!enabled);
+        }, false);
+        menu.AddToggle("Crouch", "Toggle Crouch", (bool enabled) => {
+            MovementSystem.Instance.ChangeCrouch(!enabled);
+        }, false);
+        menu.AddToggle("Prone", "Toggle Prone", (bool enabled) => {
+            MovementSystem.Instance.ChangeProne(!enabled);
+        }, false);
+        menu.AddToggle("Sitting", "Toggle Sitting", (bool enabled) => {
+            MovementSystem.Instance.sitting = !enabled;
+        }, false);
+        menu.AddToggle("Rotation Lock", "Lock Rotation", (bool enabled) => {
+            MovementSystem.Instance.canRot = !enabled;
+        }, false);
+
+        menu = ButtonAPI.MainPage.AddSubMenu("Debug", "Debug");
         menu.AddButton("Print Layers", "", () => {
             for (int i = 0; i < 100; i++) {
                 var name = LayerMask.LayerToName(i);
@@ -53,13 +86,12 @@ public class Main : MelonMod {
             }
         });
         menu.AddButton("Dump Players", "", () => {
-            Int32 unixTimestamp = (int)DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
+            var unixTimestamp = (int)DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
             var path = $"UserData/Logs/PlayerDump-{unixTimestamp}.json";
             var json = CVRPlayerManager.Instance.NetworkPlayers.ToJson();
             File.WriteAllText(path, json.ToString());
             MelonLogger.Msg($"Dumped {CVRPlayerManager.Instance.NetworkPlayers.Count} to {path}");
         });
-#endif
         menu.AddButton("Print Players", "", () => {
             MelonLogger.Msg($"=== {CVRPlayerManager.Instance.NetworkPlayers.Count} Players ===");
             int i = 0;

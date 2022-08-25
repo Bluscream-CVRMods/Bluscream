@@ -12,7 +12,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Bluscream {
+namespace AutoConnect {
     internal static class Extensions {
         #region DateTime
         public static bool ExpiredSince(this DateTime dateTime, int minutes) {
