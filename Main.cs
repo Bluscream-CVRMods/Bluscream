@@ -1,4 +1,6 @@
-﻿using ABI_RC.Core.Player;
+﻿using ABI.CCK.Components;
+using ABI_RC.Core.Player;
+using ABI_RC.Systems.Camera.VisualMods;
 using ABI_RC.Systems.MovementSystem;
 using AutoConnect;
 using HarmonyLib;
@@ -6,6 +8,10 @@ using MelonLoader;
 using System;
 using System.IO;
 using UnityEngine;
+using ABI_RC.Systems.MovementSystem;
+using CVRPlayerEntity = ABI_RC.Core.Player.CVRPlayerEntity;
+using ABI_RC.Core.Player;
+using ABI.CCK.Components;
 using ButtonAPI = ChilloutButtonAPI.ChilloutButtonAPIMain;
 
 [assembly: MelonInfo(typeof(AutoConnect.Main), Guh.Name, Guh.Version, Guh.Author, Guh.DownloadLink)]
@@ -57,7 +63,7 @@ public class Main : MelonMod {
     private void ButtonAPI_OnInit() {
 
         ChilloutButtonAPI.UI.SubMenu menu = ButtonAPI.MainPage.AddSubMenu("Locomotion", "Movement");
-        _ = menu.AddToggle("Freeze", "Freeze Player", (bool enabled) => {
+        _ = menu.AddToggle("Freeze!", "Freeze Player", (bool enabled) => {
             MovementSystem.Instance.enabled = !enabled;
         }, false);
         _ = menu.AddToggle("canMove", "canMove", (bool enabled) => {
@@ -75,8 +81,14 @@ public class Main : MelonMod {
         _ = menu.AddToggle("Sitting", "Toggle Sitting", (bool enabled) => {
             MovementSystem.Instance.sitting = !enabled;
         }, false);
+        _ = menu.AddToggle("Locomotion Lock", "Lock Locomotion", (bool enabled) => {
+            PlayerSetup.Instance.LockLocomotion(!enabled);
+        }, false);
         _ = menu.AddToggle("Rotation Lock", "Lock Rotation", (bool enabled) => {
             MovementSystem.Instance.canRot = !enabled;
+        }, false);
+        _ = menu.AddToggle("Rotation Lock 2", "Lock Rotation (alternative)", (bool enabled) => {
+            PlayerSetup.Instance.LockRotation(!enabled);
         }, false);
 
         menu = ButtonAPI.MainPage.AddSubMenu("Debug", "Debug");
@@ -116,13 +128,71 @@ public class Main : MelonMod {
                 MelonLogger.Msg($"DarkRift2Player.PlayerId: {player.DarkRift2Player.PlayerId}");
                 MelonLogger.Msg($"PlayerDescriptor.ownerId: {player.PlayerDescriptor.ownerId}");
                 MelonLogger.Msg($"AvatarId: {player.AvatarId}");
+                MelonLogger.Msg($"Position: {player.PlayerObject.transform.position}");
+                
                 //MelonLogger.Msg($"PlayerDescriptor.avtrId: {player.PlayerDescriptor.avtrId}");
-                //MelonLogger.Msg($"PlayerMetaData.State: {player.PlayerMetaData.State}");
+                MelonLogger.Msg($"PlayerMetaData.State: {player.PlayerMetaData.State}");
                 MelonLogger.Msg($"= Player {i} =");
                 i++;
             }
             MelonLogger.Msg($"=== {CVRPlayerManager.Instance.NetworkPlayers.Count} Players ===");
         });
+
+        menu = ButtonAPI.MainPage.AddSubMenu("Teleport", "Teleport");
+        _ = menu.AddButton("Debug", "", () => {
+            MelonLogger.Msg("=== TELEPORT DEBUG ===");
+            MelonLogger.Msg("PlayerSetup.Instance.gameObject.transform.position");
+            MelonLogger.Msg(PlayerSetup.Instance.gameObject.transform.position);
+            MelonLogger.Msg("PlayerSetup.Instance.gameObject.transform.rotation");
+            MelonLogger.Msg(PlayerSetup.Instance.gameObject.transform.rotation);
+            //MelonLogger.Msg("CVR_MovementSystem.Instance.gameObject.transform.position");
+            //MelonLogger.Msg(CVR_MovementSystem.Instance.gameObject.transform.position);
+            //MelonLogger.Msg("CVR_MovementSystem.Instance.transform.position");
+            //MelonLogger.Msg(CVR_MovementSystem.Instance.transform.position);
+            var localPlayer = GameObject.Find("_PLAYERLOCAL/[PlayerAvatar]");
+            MelonLogger.Msg("localPlayer.transform.position");
+            MelonLogger.Msg(localPlayer.transform.position);
+            MelonLogger.Msg("=== TELEPORT DEBUG ===");
+        });
+        
+        _ = menu.AddButton("0, 0, 0", "", () => { Teleport(0f, 0f, 0f); });
+        _ = menu.AddButton("Forward", "", () => { TeleportRelative(TeleportDirection.Front, 10); });
+        _ = menu.AddButton("Up", "", () => { TeleportRelative(TeleportDirection.Up, 5); });
+    }
+
+    private enum TeleportDirection { Left, Right, Up, Down, Front, Back }
+    private void TeleportRelative(TeleportDirection direction, int distance) {
+        MelonLogger.Msg("Teleporting {0}", direction);
+        var newPos = PlayerSetup.Instance.gameObject.transform.position;
+        switch (direction) {
+            case TeleportDirection.Left:
+                newPos -= PlayerSetup.Instance.gameObject.transform.right * distance;
+                break;
+            case TeleportDirection.Right:
+                newPos += PlayerSetup.Instance.gameObject.transform.right * distance;
+                break;
+            case TeleportDirection.Down:
+                newPos -= PlayerSetup.Instance.gameObject.transform.up * distance;
+                break;
+            case TeleportDirection.Up:
+                newPos += PlayerSetup.Instance.gameObject.transform.up * distance;
+                break;
+            case TeleportDirection.Back:
+                newPos -= PlayerSetup.Instance.gameObject.transform.forward * distance;
+                break;
+            case TeleportDirection.Front:
+                newPos += PlayerSetup.Instance.gameObject.transform.forward * distance;
+                break;
+        }
+        Teleport(newPos);
+    }
+    private void Teleport(float x, float y, float z) => Teleport(new Vector3(x, y, z));
+    private void Teleport(Vector3 pos) {
+        MelonLogger.Msg("Teleporting to {0}", pos);
+        CVR_MovementSystem.Instance.TeleportToPosRot(pos, PlayerSetup.Instance.gameObject.transform.rotation);
+        PlayerSetup.Instance.gameObject.transform.SetPositionAndRotation(pos, PlayerSetup.Instance.gameObject.transform.rotation);
+        PlayerSetup.Instance.gameObject.transform.position = pos;
+        PlayerSetup.Instance.gameObject.transform.rotation = PlayerSetup.Instance.gameObject.transform.rotation;
     }
 
     private void OnPlayerJoin(PlayerDescriptor player) {
