@@ -1,6 +1,4 @@
-﻿using ABI.CCK.Components;
-using ABI_RC.Core.Player;
-using ABI_RC.Systems.Camera.VisualMods;
+﻿using ABI_RC.Core.Player;
 using ABI_RC.Systems.MovementSystem;
 using AutoConnect;
 using HarmonyLib;
@@ -8,10 +6,7 @@ using MelonLoader;
 using System;
 using System.IO;
 using UnityEngine;
-using ABI_RC.Systems.MovementSystem;
 using CVRPlayerEntity = ABI_RC.Core.Player.CVRPlayerEntity;
-using ABI_RC.Core.Player;
-using ABI.CCK.Components;
 using ButtonAPI = ChilloutButtonAPI.ChilloutButtonAPIMain;
 
 [assembly: MelonInfo(typeof(AutoConnect.Main), Guh.Name, Guh.Version, Guh.Author, Guh.DownloadLink)]
@@ -145,6 +140,10 @@ public class Main : MelonMod {
             MelonLogger.Msg(PlayerSetup.Instance.gameObject.transform.position);
             MelonLogger.Msg("PlayerSetup.Instance.gameObject.transform.rotation");
             MelonLogger.Msg(PlayerSetup.Instance.gameObject.transform.rotation);
+            MelonLogger.Msg("MovementSystem.Instance.gameObject.transform.position");
+            MelonLogger.Msg(MovementSystem.Instance.gameObject.transform.position);
+            MelonLogger.Msg("MovementSystem.Instance.transform.position");
+            MelonLogger.Msg(MovementSystem.Instance.transform.position);
             //MelonLogger.Msg("CVR_MovementSystem.Instance.gameObject.transform.position");
             //MelonLogger.Msg(CVR_MovementSystem.Instance.gameObject.transform.position);
             //MelonLogger.Msg("CVR_MovementSystem.Instance.transform.position");
@@ -189,10 +188,10 @@ public class Main : MelonMod {
     private void Teleport(float x, float y, float z) => Teleport(new Vector3(x, y, z));
     private void Teleport(Vector3 pos) {
         MelonLogger.Msg("Teleporting to {0}", pos);
-        CVR_MovementSystem.Instance.TeleportToPosRot(pos, PlayerSetup.Instance.gameObject.transform.rotation);
-        PlayerSetup.Instance.gameObject.transform.SetPositionAndRotation(pos, PlayerSetup.Instance.gameObject.transform.rotation);
-        PlayerSetup.Instance.gameObject.transform.position = pos;
-        PlayerSetup.Instance.gameObject.transform.rotation = PlayerSetup.Instance.gameObject.transform.rotation;
+        MovementSystem.Instance.TeleportToPosRot(pos, PlayerSetup.Instance.gameObject.transform.rotation);
+        //PlayerSetup.Instance.gameObject.transform.SetPositionAndRotation(pos, PlayerSetup.Instance.gameObject.transform.rotation);
+        //PlayerSetup.Instance.gameObject.transform.position = pos;
+        //PlayerSetup.Instance.gameObject.transform.rotation = PlayerSetup.Instance.gameObject.transform.rotation;
     }
 
     private void OnPlayerJoin(PlayerDescriptor player) {
